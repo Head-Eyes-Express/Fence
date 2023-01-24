@@ -5,7 +5,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.server.Directives.complete
 import gg.fence.http.ApiService.{Request, Response}
-
 import scala.concurrent.{ExecutionContext, Future}
 
 
