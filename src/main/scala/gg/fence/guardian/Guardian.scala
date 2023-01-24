@@ -10,6 +10,7 @@ object Guardian {
 
   case object Hello extends Msg
   case object World extends Msg
+  case object Stop extends Msg
 
   sealed trait Evt
 
@@ -28,11 +29,12 @@ object Guardian {
       println(s"Current state: ${state}")
       println("Hello")
     }
+    case Stop => Effect.stop()
   }
 
-  private def evtHandler(currentState: State, evt: Evt): State =
+  private def evtHandler(previousState: State, evt: Evt): State =
     evt match {
-      case Replied => currentState.copy(currentState.replyCounter + 1, currentState.messageCounter + 1)
+      case Replied => previousState.copy(previousState.replyCounter + 1, previousState.messageCounter + 1)
     }
 
   def apply(): Behavior[Msg] =

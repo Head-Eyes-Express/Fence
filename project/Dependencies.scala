@@ -8,7 +8,7 @@ object Dependencies {
   val akkaV = "2.6.20"
   val mongoAkkaV = "3.0.8"
 
-  val akkaHttpV = "10.4.0"
+  val akkaHttpV = "10.2.10"
   val scalaMockV = "5.1.0"
   val scalaTestV = "3.1.0"
   val scalaCheckV = "1.14.1"
