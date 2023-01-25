@@ -7,6 +7,7 @@ import com.typesafe.config.ConfigFactory
 import gg.fence.data.DataRetriever
 import gg.fence.guardian.Guardian
 import gg.fence.http.{ApiService, Server}
+import org.mongodb.scala.{MongoClient, MongoDatabase}
 
 import scala.concurrent.{ExecutionContext, Future}
 
