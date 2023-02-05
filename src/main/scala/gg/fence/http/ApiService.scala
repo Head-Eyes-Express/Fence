@@ -25,9 +25,7 @@ object ApiService {
 
   def apply(dataRetriever: DataRetriever[Item])(implicit ec: ExecutionContext): ApiService = (request: Request) => request match {
     case Unit =>
-      println("Fuck you")
       dataRetriever.get(69).map(x => Final(x))
-     // Future.successful(Hello)
   }
 
 }
