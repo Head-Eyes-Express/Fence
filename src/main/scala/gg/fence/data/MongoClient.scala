@@ -103,8 +103,8 @@ object MongoClient {
       case JsNumber(value) => BsonDecimal128(value)
       case JsBoolean(value) => BsonBoolean(value)
       case JsArray(value) => BsonArray.fromIterable(value.map(fromJsValue))
-      case JsObject(value) => BsonDocument(value.map{ case (k, v) =>
-        k -> fromJsValue(v)
+      case JsObject(objectValue) => BsonDocument(objectValue.map{ case (key, value) =>
+        key -> fromJsValue(value)
       })
     }
 
