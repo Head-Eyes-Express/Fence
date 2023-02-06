@@ -10,14 +10,17 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.jdk.CollectionConverters._
 import scala.util.Success
 
+
+/** An Intermediary API that does not expose the current library used by the application */
 trait MongoClient {
   def getData[A]()(implicit transformer: JsTransformer[A]): Future[List[A]]
-  def getDataByName[A](name: String)(implicit transformer: JsTransformer[A]): Future[List[A]]
+  def getDataById[A](name: String)(implicit transformer: JsTransformer[A]): Future[Option[A]]
   def addData[A](data: A)(implicit transformer: JsTransformer[A]): Future[Unit]
 }
 
 object MongoClient {
 
+  /** An application representation of JSON Values that does not use library definitions */
   sealed trait JsValue
   final case object JsNull extends JsValue
   final case class JsString(value: String) extends JsValue
@@ -62,7 +65,10 @@ object MongoClient {
   }
 
 
-  def apply(client: org.mongodb.scala.MongoClient, collectionRegistry: Map[Class[_],String])(implicit ec: ExecutionContext): MongoClient = new MongoClient {
+  def apply(
+             client: org.mongodb.scala.MongoClient,
+             collectionRegistry: Map[Class[_],String]
+           )(implicit ec: ExecutionContext): MongoClient = new MongoClient {
 
     private val db: MongoDatabase = client.getDatabase("fence-db")
 
@@ -132,7 +138,7 @@ object MongoClient {
       }
     }
 
-    override def getDataByName[A](name: String)(implicit transformer: JsTransformer[A]): Future[List[A]] = {
+    override def getDataById[A](name: String)(implicit transformer: JsTransformer[A]): Future[Option[A]] = {
       val promise: Promise[Seq[Document]] = Promise()
       val observer = new Observer[Document](promise)
       val collectionName = collectionRegistry(classOf[A])
