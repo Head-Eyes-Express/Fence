@@ -1,7 +1,10 @@
 package gg.fence.data
+import akka.contrib.persistence.mongodb.Bson
 import gg.fence.data.MongoClient.{JsTransformer, JsValue}
+import org.mongodb.scala.bson.{BsonDocument, BsonValue}
+// import org.bson.{BsonArray, BsonBoolean, BsonInt64, BsonNull, BsonObjectId, BsonString, BsonValue}
 import org.mongodb.scala._
-import org.mongodb.scala.bson.BsonValue
+import org.mongodb.scala.bson.{BsonArray, BsonBoolean, BsonDecimal128, BsonObjectId, BsonString, BsonNull}
 import org.mongodb.scala.{Observer => DbObserver}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -94,6 +97,18 @@ object MongoClient {
       }
     }
 
+    private def fromJsValue(jsValue: JsValue): BsonValue = jsValue match {
+      case JsNull => BsonNull()
+      case JsString(value) => BsonString(value)
+      case JsNumber(value) => BsonDecimal128(value)
+      case JsBoolean(value) => BsonBoolean(value)
+      case JsArray(value) => BsonArray.fromIterable(value.map(fromJsValue))
+      case JsObject(value) => BsonDocument(value.map{ case (k, v) =>
+        k -> fromJsValue(v)
+      })
+    }
+
+
     override def getData[A]()(implicit transformer:  JsTransformer[A]): Future[List[A]] = {
       val promise: Promise[Seq[Document]] = Promise()                              // Create a Promise to be used in the Observer
       val observer = new Observer[Document](promise)                               // Create the Observer that subscribes to the collection Observable
@@ -110,8 +125,20 @@ object MongoClient {
       }
     }
 
-    override def getDataByName[A](name: String)(implicit transformer: JsTransformer[A]): Future[List[A]] = ???
+    override def getDataByName[A](name: String)(implicit transformer: JsTransformer[A]): Future[List[A]] = {
+      val promise: Promise[Seq[Document]] = Promise()
+      val observer = new Observer[Document](promise)
+      val collectionName = collectionRegistry(classOf[A])
+      val collection: MongoCollection[Document] = db.getCollection(collectionName)
+    }
 
-    override def addData[A](data: A)(implicit transformer: JsTransformer[A]): Future[Unit] = ???
+    override def addData[A](data: A)(implicit transformer: JsTransformer[A]): Future[Unit] = {
+      val promise: Promise[Seq[Document]] = Promise()
+      val observer = new Observer[Document](promise)
+      val collectionName = collectionRegistry(classOf[A])
+      val collection: MongoCollection[Document] = db.getCollection(collectionName)
+      val bsonData = fromJsValue(transformer.toJsValue(data))
+      collection.insertOne(bsonData)
+    }
   }
 }
