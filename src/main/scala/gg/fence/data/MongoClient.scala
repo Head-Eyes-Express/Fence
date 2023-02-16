@@ -142,8 +142,8 @@ object MongoClient {
       val promise: Promise[Seq[Document]] = Promise()
       val observer = new Observer[Document](promise)
       val collectionName = collectionRegistry(classOf[A])
-      val collection: MongoCollection[Document] = db.getCollection(collectionName)
-      collection.find()
+      val mongocollection = db.getCollection(collectionName)
+      mongocollection.find()
     }
 
     override def addData[A](data: A)(implicit transformer: JsTransformer[A]): Future[Unit] = {
