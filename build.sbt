@@ -8,4 +8,4 @@ This / organization := "gg.fence"
 
 This / scalaVersion := "2.13.10"
 
-This / libraryDependencies ++= akkaLibs ++ testLibs ++ Seq(logback)
+This / libraryDependencies ++= akkaLibs ++ testLibs ++ Seq(logback,caliban,circe,circeCore,circeGeneric,circeParser)
