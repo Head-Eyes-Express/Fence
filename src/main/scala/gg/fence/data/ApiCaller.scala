@@ -39,7 +39,7 @@ object ApiCaller extends FailFastCirceSupport{
     }
 
   }
-  def apply()(implicit ec : ExecutionContext, system: ActorSystem ): ApiCaller ={
+  def apply()(implicit ec : ExecutionContext, system: ActorSystem ): ApiCaller =
     new ApiCaller {
       override def getItemPrice(): Future[List[ExternalItem]] = {
         val header = HttpHeader.parse("AUTH-Token", "bede6545d506c4f00a56")
@@ -78,5 +78,4 @@ object ApiCaller extends FailFastCirceSupport{
         }
       }
     }
-  }
 }

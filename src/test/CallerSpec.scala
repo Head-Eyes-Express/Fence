@@ -12,7 +12,7 @@ import scala.concurrent.Future
 
 class CallerSpec extends AnyWordSpec with OptionValues with ScalaFutures with Matchers {
 
-  private val stub = Caller.stub(items)
+  private val caller = ApiCaller.apply().getItemPrice()
 
   "CallerSpec" when {
     "using stub" should {
