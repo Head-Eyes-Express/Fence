@@ -3,19 +3,21 @@ import akka.contrib.persistence.mongodb.Bson
 import gg.fence.data.MongoClient.JsTransformer
 import org.mongodb.scala.bson.{BsonDocument, BsonValue}
 import org.mongodb.scala._
-import org.mongodb.scala.bson.{BsonArray, BsonBoolean, BsonDecimal128, BsonString, BsonNull}
+import org.mongodb.scala.bson.{BsonArray, BsonBoolean, BsonDecimal128, BsonNull, BsonString}
+import org.mongodb.scala.model.Filters.equal
 import org.mongodb.scala.{Observer => DbObserver}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.jdk.CollectionConverters._
+import scala.reflect.ClassTag
 import scala.util.Success
 
 
 /** An Intermediary API that does not expose the current library used by the application */
 trait MongoClient {
-  def getData[A]()(implicit transformer: JsTransformer[A]): Future[List[A]]
-  def getDataById[A](name: String)(implicit transformer: JsTransformer[A]): Future[Option[A]]
-  def addData[A](data: A)(implicit transformer: JsTransformer[A]): Future[Unit]
+  def getData[A: ClassTag]()(implicit transformer: JsTransformer[A]): Future[List[A]]
+  def getDataById[A: ClassTag](name: String)(implicit transformer: JsTransformer[A]): Future[Option[A]]
+  def addData[A: ClassTag](data: A)(implicit transformer: JsTransformer[A]): Future[Unit]
 }
 
 object MongoClient {
@@ -67,7 +69,10 @@ object MongoClient {
 
   def apply(
              client: org.mongodb.scala.MongoClient,
-             collectionRegistry: Map[Class[_],String]
+            //    Key Name of any data type | Whatever string it is
+            //                          |       |
+            //                          |       |
+             collectionRegistry: Map[Class[_],String] // Used to create different collections for different data types which is why we use "class"
            )(implicit ec: ExecutionContext): MongoClient = new MongoClient {
 
     private val db: MongoDatabase = client.getDatabase("fence-db")
@@ -123,9 +128,16 @@ object MongoClient {
       promise.future.map(_.toList)
     }
 
+    private def observeResultsById(collection: MongoCollection[Document], name: String): Future[List[Document]] = {
+      val promise: Promise[Seq[Document]] = Promise()     // Create a Promise to be used in the Observer
+      val observer = new Observer[Document](promise)      // Create the Observer that subscribes to the collection Observable
+      collection.find(equal("Name",name)).subscribe(observer)               // Make the observer subscribe to the documents emitted by the observable
+      promise.future.map(_.toList)
+    }
 
-    override def getData[A]()(implicit transformer:  JsTransformer[A]): Future[List[A]] = {
-      val collectionName = collectionRegistry(classOf[A])                          // Get the collection name of the data we are getting from the registry
+
+    override def getData[A: ClassTag]()(implicit transformer:  JsTransformer[A]): Future[List[A]] = {
+      val collectionName = collectionRegistry(implicitly[ClassTag[A]])                          // Get the collection name of the data we are getting from the registry
       val mongoCollection = db.getCollection(collectionName)                       // Get the Mongo Collection for the data we are getting
       val result = observeResults(mongoCollection)
       result.map { listOfDocument =>
@@ -138,16 +150,22 @@ object MongoClient {
       }
     }
 
-    override def getDataById[A](name: String)(implicit transformer: JsTransformer[A]): Future[Option[A]] = {
-      val promise: Promise[Seq[Document]] = Promise()
-      val observer = new Observer[Document](promise)
-      val collectionName = collectionRegistry(classOf[A])
+    override def getDataById[A: ClassTag](name: String)(implicit transformer: JsTransformer[A]): Future[Option[A]] = {
+      val collectionName = collectionRegistry(implicitly[ClassTag[A]])
       val mongocollection = db.getCollection(collectionName)
-      mongocollection.find()
+      val result = observeResultsById(mongocollection,name)
+      result.map { listOfDocument =>
+        listOfDocument.map { document =>
+          val bsonJsValue = JsObject(document.map { case (key, value) =>           // Iterate on the BsonValue the client gives us
+            key -> toJsValue(value)                                                // Transform Java's bullshit BsonValue into something useful in our application which is a JsValue
+          }.toMap)                                                                 // Since Document is an Iterable of Key-Value pair, it's a Map and we transform it into a Map
+          transformer.fromJsValue(bsonJsValue)                                     // Transform JsValue to an A
+        }.headOption
+      }
     }
 
-    override def addData[A](data: A)(implicit transformer: JsTransformer[A]): Future[Unit] = {
-      val collectionName = collectionRegistry(classOf[A])
+    override def addData[A: ClassTag](data: A)(implicit transformer: JsTransformer[A]): Future[Unit] = {
+      val collectionName = collectionRegistry(implicitly[ClassTag[A]])
       val jsValueOfData = transformer.toJsValue(data)
       val bsonDocument = fromJsObject(jsValueOfData)
       db.getCollection(collectionName).insertOne(bsonDocument).toFuture().map(_ => ())

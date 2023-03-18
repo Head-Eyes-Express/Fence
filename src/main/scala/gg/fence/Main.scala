@@ -8,6 +8,7 @@ import gg.fence.data.DataRetriever
 import gg.fence.guardian.Guardian
 import gg.fence.http.{ApiService, Server}
 import org.mongodb.scala.{MongoClient, MongoDatabase}
+import gg.fence.data.{MongoClient => MongoC}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -20,7 +21,8 @@ object Main {
     val httpPort = httpConfig.getInt("port")
     val initialBehavior = ActorSystem(Guardian(), config.getString("app.actorSystemName"), config)
     implicit val ec: ExecutionContext = initialBehavior.executionContext
-    val dataRetriever = DataRetriever.ItemDataRetriever()
+    val mongoClientThingy = MongoC(client = MongoClient(), collectionRegistry = Map.empty[Class[_],String])
+    val dataRetriever = DataRetriever.itemRetriever(mongoClientThingy)
     val apiService = ApiService(dataRetriever)
     val server = Server(initialBehavior.classicSystem, apiService)
     server.start(httpHost, httpPort)

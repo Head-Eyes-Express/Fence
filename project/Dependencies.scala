@@ -15,6 +15,7 @@ object Dependencies {
   val circeV = "1.39.2"
   val circeVersion = "0.14.4"
 
+  val testKit = "com.typesafe.akka" %% "akka-testkit" % akkaV % Test
   val caliban = "com.github.ghostdogpr"  %% "caliban" % calibanV
   val akkaPersistenceTyped = akkaOrg %% "akka-persistence-typed" % akkaV
   val akkaPersistenceMongoJournal = scullxOrg %% "akka-persistence-mongo-scala" % mongoAkkaV
@@ -26,7 +27,7 @@ object Dependencies {
   val circeParser = "io.circe" %% "circe-parser" % circeVersion
   val logback = "ch.qos.logback" % "logback-classic" % "1.4.5"
 
-  val akkaLibs: Seq[ModuleID] = Seq(akkaPersistenceTyped, akkaHttp, akkaTypedTestKit, akkaPersistenceMongoJournal)
+  val akkaLibs: Seq[ModuleID] = Seq(akkaPersistenceTyped, akkaHttp, akkaTypedTestKit, akkaPersistenceMongoJournal, testKit)
   val testLibs: Seq[ModuleID] = Seq(
     "org.scalatest" %% "scalatest" % scalaTestV % Test,
     "org.scalamock" %% "scalamock" % scalaMockV % Test,
