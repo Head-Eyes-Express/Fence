@@ -50,7 +50,7 @@ object ApiCaller extends FailFastCirceSupport{
               uri = "https://api.tarkov-changes.com/v1/grenades",
               headers = List(parsedHeader)
             )
-              val response = Http().singleRequest(request) // Defines a real client on every call (harder to be controllable)
+             // val response = Http().singleRequest(request) // Defines a real client on every call (harder to be controllable)
               val responseV2  =  httpClient.singleRequest(request)  // A client is provided once and is used many times by the caller, can be a mock/stub/etc (makes things controllable)
               responseV2.flatMap(res => Unmarshal(res).to[List[ExternalItem]])
           }
@@ -70,7 +70,7 @@ object ApiCaller extends FailFastCirceSupport{
               uri = "https://api.tarkov-changes.com/v1/grenades",
               headers = List(parsedHeader)
             )
-            val response = Http().singleRequest(request)
+            val response = httpClient.singleRequest(request)
             response.flatMap(res => Unmarshal(res).to[List[ExternalItem]].map(list => list.headOption))
           }
           case ParsingResult.Error(error) => {
